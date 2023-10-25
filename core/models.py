@@ -120,8 +120,5 @@ class Resume(DateTimeMixin):
         models.PositiveIntegerField()
     )  # цифры и буквы, диапазон как проверять на правильность написания?
     published_datetime = models.DateTimeField(auto_now_add=True)
-    test = [
-        1,
-        3,
-        4,
+    test = [    1,        3,        4, 5,
     ]
