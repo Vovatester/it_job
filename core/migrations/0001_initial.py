@@ -7,93 +7,242 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Company',
+            name="Company",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_datetime', models.DateTimeField(auto_now_add=True)),
-                ('updated_datetime', models.DateTimeField(auto_now=True)),
-                ('login', models.CharField(max_length=30, unique=True, validators=[django.core.validators.MinLengthValidator(8, 'Поле "login" должно содержать минимум 8 символов')])),
-                ('password', models.CharField(max_length=20, validators=[django.core.validators.MinLengthValidator(8, 'Поле "password" должно содержать минимум 8 символов')])),
-                ('name', models.CharField(max_length=100, validators=[django.core.validators.MinLengthValidator(4, 'Поле "name" должно содержать минимум 4 символов')])),
-                ('countries', models.CharField(max_length=50)),
-                ('town', models.CharField(max_length=50)),
-                ('foundation_date', models.DateField()),
-                ('site_href', models.CharField(max_length=200)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_datetime", models.DateTimeField(auto_now_add=True)),
+                ("updated_datetime", models.DateTimeField(auto_now=True)),
+                (
+                    "login",
+                    models.CharField(
+                        max_length=30,
+                        unique=True,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                8, 'Поле "login" должно содержать минимум 8 символов'
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "password",
+                    models.CharField(
+                        max_length=20,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                8, 'Поле "password" должно содержать минимум 8 символов'
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=100,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                4, 'Поле "name" должно содержать минимум 4 символов'
+                            )
+                        ],
+                    ),
+                ),
+                ("countries", models.CharField(max_length=50)),
+                ("town", models.CharField(max_length=50)),
+                ("foundation_date", models.DateField()),
+                ("site_href", models.CharField(max_length=200)),
             ],
         ),
         migrations.CreateModel(
-            name='Technology',
+            name="Technology",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_datetime', models.DateTimeField(auto_now_add=True)),
-                ('updated_datetime', models.DateTimeField(auto_now=True)),
-                ('technology', models.CharField(max_length=100)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_datetime", models.DateTimeField(auto_now_add=True)),
+                ("updated_datetime", models.DateTimeField(auto_now=True)),
+                ("technology", models.CharField(max_length=100)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Vacancy',
+            name="Vacancy",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_datetime', models.DateTimeField(auto_now_add=True)),
-                ('updated_datetime', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=100, validators=[django.core.validators.MinLengthValidator(4, 'Поле "name" должно содержать минимум 2 символа')])),
-                ('town', models.CharField(max_length=150)),
-                ('salary', models.PositiveIntegerField()),
-                ('description', models.TextField(max_length=10000)),
-                ('published_datetime', models.DateTimeField(auto_now_add=True)),
-                ('company_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.company')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_datetime", models.DateTimeField(auto_now_add=True)),
+                ("updated_datetime", models.DateTimeField(auto_now=True)),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=100,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                4, 'Поле "name" должно содержать минимум 2 символа'
+                            )
+                        ],
+                    ),
+                ),
+                ("town", models.CharField(max_length=150)),
+                ("salary", models.PositiveIntegerField()),
+                ("description", models.TextField(max_length=10000)),
+                ("published_datetime", models.DateTimeField(auto_now_add=True)),
+                (
+                    "company_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="core.company"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Specialist',
+            name="Specialist",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_datetime', models.DateTimeField(auto_now_add=True)),
-                ('updated_datetime', models.DateTimeField(auto_now=True)),
-                ('login', models.CharField(max_length=30, unique=True, validators=[django.core.validators.MinLengthValidator(8, 'Поле "login" должно содержать минимум 8 символов')])),
-                ('password', models.CharField(max_length=20, validators=[django.core.validators.MinLengthValidator(8, 'Поле "password" должно содержать минимум 8 символов')])),
-                ('name', models.CharField(max_length=100, validators=[django.core.validators.MinLengthValidator(2, 'Поле "name" должно содержать минимум 2 символа')])),
-                ('surname', models.CharField(max_length=100, validators=[django.core.validators.MinLengthValidator(2, 'Поле "surname" должно содержать минимум 2 символа')])),
-                ('patronymic', models.CharField(blank=True, max_length=100, validators=[django.core.validators.MinLengthValidator(2, 'Поле "patronymic" должно содержать минимум 2 символа')])),
-                ('born_date', models.DateField(default=None)),
-                ('technologies', models.ManyToManyField(to='core.technology')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_datetime", models.DateTimeField(auto_now_add=True)),
+                ("updated_datetime", models.DateTimeField(auto_now=True)),
+                (
+                    "login",
+                    models.CharField(
+                        max_length=30,
+                        unique=True,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                8, 'Поле "login" должно содержать минимум 8 символов'
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "password",
+                    models.CharField(
+                        max_length=20,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                8, 'Поле "password" должно содержать минимум 8 символов'
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=100,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                2, 'Поле "name" должно содержать минимум 2 символа'
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "surname",
+                    models.CharField(
+                        max_length=100,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                2, 'Поле "surname" должно содержать минимум 2 символа'
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "patronymic",
+                    models.CharField(
+                        blank=True,
+                        max_length=100,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                2,
+                                'Поле "patronymic" должно содержать минимум 2 символа',
+                            )
+                        ],
+                    ),
+                ),
+                ("born_date", models.DateField(default=None)),
+                ("technologies", models.ManyToManyField(to="core.technology")),
             ],
         ),
         migrations.CreateModel(
-            name='Resume',
+            name="Resume",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_datetime', models.DateTimeField(auto_now_add=True)),
-                ('updated_datetime', models.DateTimeField(auto_now=True)),
-                ('position', models.CharField(max_length=150)),
-                ('salary', models.PositiveIntegerField()),
-                ('published_datetime', models.DateTimeField(auto_now_add=True)),
-                ('specialist', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='core.specialist')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_datetime", models.DateTimeField(auto_now_add=True)),
+                ("updated_datetime", models.DateTimeField(auto_now=True)),
+                ("position", models.CharField(max_length=150)),
+                ("salary", models.PositiveIntegerField()),
+                ("published_datetime", models.DateTimeField(auto_now_add=True)),
+                (
+                    "specialist",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="core.specialist",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddConstraint(
-            model_name='company',
-            constraint=models.CheckConstraint(check=models.Q(('foundation_date__lte', datetime.date(2023, 10, 24))), name='foundation_date_constraint'),
+            model_name="company",
+            constraint=models.CheckConstraint(
+                check=models.Q(("foundation_date__lte", datetime.date(2023, 10, 24))),
+                name="foundation_date_constraint",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='specialist',
-            constraint=models.CheckConstraint(check=models.Q(('born_date__lte', datetime.date(2023, 10, 24))), name='born_date_constraint'),
+            model_name="specialist",
+            constraint=models.CheckConstraint(
+                check=models.Q(("born_date__lte", datetime.date(2023, 10, 24))),
+                name="born_date_constraint",
+            ),
         ),
     ]
