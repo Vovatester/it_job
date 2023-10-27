@@ -1,6 +1,25 @@
 import datetime
-from django.db import models
-from django.core.validators import MinLengthValidator
+from django.db import (
+    models,
+)
+from django.core.validators import (
+    MinLengthValidator,
+    RegexValidator,
+)
+
+
+def min_length_validator(char_count):
+    return MinLengthValidator(
+        char_count,
+        f'Количество символов должно быть не менее {char_count}',
+    )
+
+
+def password_regex_validator():
+    return RegexValidator(
+        regex='^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]{8,}$',
+        message='Пароль должен состоять из 8 символов, строчной и заглавной буквы, цифры и специального символа',
+    )
 
 
 class DateTimeMixin(models.Model):
@@ -13,105 +32,110 @@ class DateTimeMixin(models.Model):
 
 class Company(DateTimeMixin):
     login = models.CharField(
+        verbose_name='Логин',
         max_length=30,
         unique=True,
-        validators=[
-            MinLengthValidator(8, 'Поле "login" должно содержать минимум 8 символов')
-        ],
+        validators=[min_length_validator(8)],
     )
     password = models.CharField(
-        max_length=20,
-        validators=[
-            MinLengthValidator(8, 'Поле "password" должно содержать минимум 8 символов')
-        ],
+        verbose_name='Пароль', max_length=20, validators=[password_regex_validator()]
     )
     name = models.CharField(
+        verbose_name='Наименование компании',
         max_length=100,
-        validators=[
-            MinLengthValidator(4, 'Поле "name" должно содержать минимум 4 символов')
-        ],
+        validators=[min_length_validator(4)],
     )
-    countries = models.CharField(max_length=50)
-    town = models.CharField(max_length=50)
-    foundation_date = models.DateField()
-    site_href = models.CharField(max_length=200)
+    country = models.CharField(verbose_name='Страна', max_length=50)
+    town = models.CharField(verbose_name='Город', max_length=50)
+    foundation_date = models.DateField(verbose_name='Дата основания компании')
+    site_href = models.CharField(verbose_name='Сайт', max_length=200)
 
     class Meta:
+        verbose_name = 'Страна'
+        verbose_name_plural = 'Страны'
         constraints = [
             models.CheckConstraint(
                 check=models.Q(foundation_date__lte=datetime.date.today()),
-                name="foundation_date_constraint",
+                name='foundation_date_constraint',
             ),
         ]
 
 
 class Technology(DateTimeMixin):
-    technology = models.CharField(max_length=100)
+    technology = models.CharField(verbose_name='Технологии', max_length=100)
+
+    class Meta:
+        verbose_name = 'Технология'
+        verbose_name_plural = 'Технологии'
 
 
 class Specialist(DateTimeMixin):
     login = models.CharField(
+        verbose_name='Логин',
         max_length=30,
         unique=True,
-        validators=[
-            MinLengthValidator(8, 'Поле "login" должно содержать минимум 8 символов')
-        ],
+        validators=[min_length_validator(8)],
     )
     password = models.CharField(
-        max_length=20,
-        validators=[
-            MinLengthValidator(8, 'Поле "password" должно содержать минимум 8 символов')
-        ],
+        verbose_name='Пароль', max_length=20, validators=[password_regex_validator()]
     )
     name = models.CharField(
-        max_length=100,
-        validators=[
-            MinLengthValidator(2, 'Поле "name" должно содержать минимум 2 символа')
-        ],
+        verbose_name='Имя', max_length=100, validators=[min_length_validator(2)]
     )
     surname = models.CharField(
-        max_length=100,
-        validators=[
-            MinLengthValidator(2, 'Поле "surname" должно содержать минимум 2 символа')
-        ],
+        verbose_name='Фамилия', max_length=100, validators=[min_length_validator(2)]
     )
     patronymic = models.CharField(
+        verbose_name='Отчество',
         max_length=100,
         blank=True,
-        validators=[
-            MinLengthValidator(
-                2, 'Поле "patronymic" должно содержать минимум 2 символа'
-            )
-        ],
+        validators=[min_length_validator(2)],
     )
-    born_date = models.DateField(default=None)
+    born_date = models.DateField(verbose_name='Дата рождения', default=None)
     technologies = models.ManyToManyField(Technology)
 
     class Meta:
+        verbose_name = 'Специалист'
+        verbose_name_plural = 'Специалисты'
         constraints = [
             models.CheckConstraint(
                 check=models.Q(born_date__lte=datetime.date.today()),
-                name="born_date_constraint",
+                name='born_date_constraint',
             ),
         ]
 
 
 class Vacancy(DateTimeMixin):
     name = models.CharField(
-        max_length=100,
-        validators=[
-            MinLengthValidator(4, 'Поле "name" должно содержать минимум 2 символа')
-        ],
+        verbose_name='Должность', max_length=100, validators=[min_length_validator(2)]
     )
-    company_id = models.ForeignKey(Company, on_delete=models.CASCADE)
-    town = models.CharField(max_length=150)
-    salary = models.PositiveIntegerField()
-    description = models.TextField(max_length=10000)
-    published_datetime = models.DateTimeField(auto_now_add=True)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+    )
+    town = models.CharField(verbose_name='Город', max_length=150)
+    salary = models.PositiveIntegerField(verbose_name='Зарплата')
+    description = models.TextField(verbose_name='Описание', max_length=10000)
+    published_datetime = models.DateTimeField(
+        verbose_name='Дата и время публикации', auto_now_add=True
+    )
+
+    class Meta:
+        verbose_name = 'Вакансия'
+        verbose_name_plural = 'Вакансии'
 
 
 class Resume(DateTimeMixin):
-    position = models.CharField(max_length=150)
-    specialist = models.OneToOneField(Specialist, on_delete=models.CASCADE)
-    salary = models.PositiveIntegerField()
-    published_datetime = models.DateTimeField(auto_now_add=True)
+    position = models.CharField(verbose_name='Должность', max_length=150)
+    specialist = models.ForeignKey(
+        Specialist,
+        on_delete=models.CASCADE,
+    )
+    salary = models.CharField(verbose_name='Зарплата', max_length=100)
+    published_datetime = models.DateTimeField(
+        verbose_name='Дата и время публикации', blank=True, null=True
+    )
+
+    class Meta:
+        verbose_name = 'Резюме'
+        verbose_name_plural = 'Резюме'
