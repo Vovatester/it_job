@@ -30,6 +30,24 @@ class DateTimeMixin(models.Model):
         abstract = True
 
 
+class Country(models.Model):
+    name = models.CharField(unique=True, max_length=50)
+
+    def __str__(self):
+        return self.name
+
+
+class City(models.Model):
+    name = models.CharField(max_length=100)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('name', 'country')
+
+    def __str__(self):
+        return self.name
+
+
 class Company(DateTimeMixin):
     login = models.CharField(
         verbose_name='Логин',
@@ -45,8 +63,8 @@ class Company(DateTimeMixin):
         max_length=100,
         validators=[min_length_validator(4)],
     )
-    country = models.CharField(verbose_name='Страна', max_length=50)
-    town = models.CharField(verbose_name='Город', max_length=50)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    town = models.ForeignKey(City, on_delete=models.CASCADE)
     foundation_date = models.DateField(verbose_name='Дата основания компании')
     site_href = models.CharField(verbose_name='Сайт', max_length=200)
 
@@ -60,13 +78,19 @@ class Company(DateTimeMixin):
             ),
         ]
 
+    def __str__(self):
+        return self.name
 
-class Technology(DateTimeMixin):
-    technology = models.CharField(verbose_name='Технологии', max_length=100)
+
+class Technology(models.Model):
+    name = models.CharField(verbose_name='Название', max_length=100, unique=True)
 
     class Meta:
         verbose_name = 'Технология'
         verbose_name_plural = 'Технологии'
+
+    def __str__(self):
+        return self.name
 
 
 class Specialist(DateTimeMixin):
@@ -92,7 +116,9 @@ class Specialist(DateTimeMixin):
         validators=[min_length_validator(2)],
     )
     born_date = models.DateField(verbose_name='Дата рождения', default=None)
-    technologies = models.ManyToManyField(Technology)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    town = models.ForeignKey(City, on_delete=models.CASCADE)
+    technologies = models.ManyToManyField(Technology, through='SpecialistTechnology')
 
     class Meta:
         verbose_name = 'Специалист'
@@ -104,6 +130,9 @@ class Specialist(DateTimeMixin):
             ),
         ]
 
+    def __str__(self):
+        return self.name
+
 
 class Vacancy(DateTimeMixin):
     name = models.CharField(
@@ -113,7 +142,7 @@ class Vacancy(DateTimeMixin):
         Company,
         on_delete=models.CASCADE,
     )
-    town = models.CharField(verbose_name='Город', max_length=150)
+    town = models.ForeignKey(City, on_delete=models.CASCADE)
     salary = models.PositiveIntegerField(verbose_name='Зарплата')
     description = models.TextField(verbose_name='Описание', max_length=10000)
     published_datetime = models.DateTimeField(
@@ -123,6 +152,9 @@ class Vacancy(DateTimeMixin):
     class Meta:
         verbose_name = 'Вакансия'
         verbose_name_plural = 'Вакансии'
+
+    def __str__(self):
+        return self.name
 
 
 class Resume(DateTimeMixin):
@@ -139,3 +171,14 @@ class Resume(DateTimeMixin):
     class Meta:
         verbose_name = 'Резюме'
         verbose_name_plural = 'Резюме'
+
+    def __str__(self):
+        return self.position
+
+
+class SpecialistTechnology(models.Model):
+    specialist = models.ForeignKey(Specialist, on_delete=models.CASCADE)
+    technology = models.ForeignKey(Technology, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('specialist', 'technology')
