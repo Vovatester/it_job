@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime, date
+from django.core.exceptions import ValidationError
 from django.db import (
     models,
 )
@@ -6,6 +7,14 @@ from django.core.validators import (
     MinLengthValidator,
     RegexValidator,
 )
+
+
+def calculate_age(born):
+    return (
+        date.today().year
+        - born.year
+        - ((date.today().month, date.today().day) < (born.month, born.day))
+    )
 
 
 def min_length_validator(char_count):
@@ -31,17 +40,23 @@ class DateTimeMixin(models.Model):
 
 
 class Country(models.Model):
-    name = models.CharField(unique=True, max_length=50)
+    name = models.CharField(verbose_name='Страна', unique=True, max_length=50)
+
+    class Meta:
+        verbose_name = 'Страна'
+        verbose_name_plural = 'Страны'
 
     def __str__(self):
         return self.name
 
 
 class City(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(verbose_name='Город', max_length=100)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     class Meta:
+        verbose_name = 'Город'
+        verbose_name_plural = 'Города'
         unique_together = ('name', 'country')
 
     def __str__(self):
@@ -63,17 +78,19 @@ class Company(DateTimeMixin):
         max_length=100,
         validators=[min_length_validator(4)],
     )
-    country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    town = models.ForeignKey(City, on_delete=models.CASCADE)
+    country = models.ForeignKey(
+        Country, verbose_name='Страна', on_delete=models.CASCADE
+    )
+    town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
     foundation_date = models.DateField(verbose_name='Дата основания компании')
     site_href = models.CharField(verbose_name='Сайт', max_length=200)
 
     class Meta:
-        verbose_name = 'Страна'
-        verbose_name_plural = 'Страны'
+        verbose_name = 'Компания'
+        verbose_name_plural = 'Компании'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(foundation_date__lte=datetime.date.today()),
+                check=models.Q(foundation_date__lte=date.today()),
                 name='foundation_date_constraint',
             ),
         ]
@@ -116,16 +133,24 @@ class Specialist(DateTimeMixin):
         validators=[min_length_validator(2)],
     )
     born_date = models.DateField(verbose_name='Дата рождения', default=None)
-    country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    town = models.ForeignKey(City, on_delete=models.CASCADE)
-    technologies = models.ManyToManyField(Technology, through='SpecialistTechnology')
+    country = models.ForeignKey(
+        Country, verbose_name='Страна', on_delete=models.CASCADE
+    )
+    town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
+    technologies = models.ManyToManyField(
+        Technology, verbose_name='Технологии', through='SpecialistTechnology'
+    )
+
+    def clean(self):
+        if calculate_age(born=self.born_date) < 18:
+            raise ValidationError('Специалисты младше 18 лет не регистрируются')
 
     class Meta:
         verbose_name = 'Специалист'
         verbose_name_plural = 'Специалисты'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(born_date__lte=datetime.date.today()),
+                check=models.Q(born_date__lte=date.today()),
                 name='born_date_constraint',
             ),
         ]
@@ -140,13 +165,14 @@ class Vacancy(DateTimeMixin):
     )
     company = models.ForeignKey(
         Company,
+        verbose_name='Компания',
         on_delete=models.CASCADE,
     )
-    town = models.ForeignKey(City, on_delete=models.CASCADE)
-    salary = models.PositiveIntegerField(verbose_name='Зарплата')
+    town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
+    salary = models.CharField(verbose_name='Зарплата', max_length=100)
     description = models.TextField(verbose_name='Описание', max_length=10000)
     published_datetime = models.DateTimeField(
-        verbose_name='Дата и время публикации', auto_now_add=True
+        verbose_name='Дата и время публикации', blank=True, null=True, default=None
     )
 
     class Meta:
@@ -161,11 +187,15 @@ class Resume(DateTimeMixin):
     position = models.CharField(verbose_name='Должность', max_length=150)
     specialist = models.ForeignKey(
         Specialist,
+        verbose_name='Специалист',
         on_delete=models.CASCADE,
     )
     salary = models.CharField(verbose_name='Зарплата', max_length=100)
     published_datetime = models.DateTimeField(
-        verbose_name='Дата и время публикации', blank=True, null=True
+        verbose_name='Дата и время публикации',
+        blank=True,
+        null=True,
+        default=None,
     )
 
     class Meta:
@@ -177,8 +207,14 @@ class Resume(DateTimeMixin):
 
 
 class SpecialistTechnology(models.Model):
-    specialist = models.ForeignKey(Specialist, on_delete=models.CASCADE)
-    technology = models.ForeignKey(Technology, on_delete=models.CASCADE)
+    specialist = models.ForeignKey(
+        Specialist, verbose_name='Специалист', on_delete=models.CASCADE
+    )
+    technology = models.ForeignKey(
+        Technology, verbose_name='Технология', on_delete=models.CASCADE
+    )
 
     class Meta:
         unique_together = ('specialist', 'technology')
+        verbose_name = 'Технология специалиста'
+        verbose_name_plural = 'Технологии специалиста'
