@@ -20,6 +20,7 @@ python = "^3.11"
 django = "^4.2.6"
 djangorestframework = "^3.14.0"
 python-dotenv = "^1.0.0"
+django-money = "^3.4.0"
 
 
 [tool.poetry.group.dev.dependencies]

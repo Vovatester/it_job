@@ -1,4 +1,5 @@
 from datetime import date
+
 from django.core.exceptions import ValidationError
 from django.db import (
     models,
@@ -7,24 +8,26 @@ from django.core.validators import (
     MinLengthValidator,
     RegexValidator,
 )
+from djmoney.models.fields import MoneyField
 
 
-def calculate_age(born):
-    return (
-        date.today().year
-        - born.year
-        - ((date.today().month, date.today().day) < (born.month, born.day))
-    )
+def check_age_18(born: date) -> bool:
+    today = date.today()
+    age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+    if age < 18:
+        return False
+    else:
+        return True
 
 
-def min_length_validator(char_count):
+def min_length_validator(char_count: int) -> MinLengthValidator:
     return MinLengthValidator(
         char_count,
         f'Количество символов должно быть не менее {char_count}',
     )
 
 
-def password_regex_validator():
+def password_regex_validator() -> RegexValidator:
     return RegexValidator(
         regex='^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]{8,}$',
         message='Пароль должен состоять из 8 символов, строчной и заглавной буквы, цифры и специального символа',
@@ -142,7 +145,7 @@ class Specialist(DateTimeMixin):
     )
 
     def clean(self):
-        if calculate_age(born=self.born_date) < 18:
+        if check_age_18(born=self.born_date) is False:
             raise ValidationError('Специалисты младше 18 лет не регистрируются')
 
     class Meta:
@@ -169,7 +172,10 @@ class Vacancy(DateTimeMixin):
         on_delete=models.CASCADE,
     )
     town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
-    salary = models.CharField(verbose_name='Зарплата', max_length=100)
+    # salary = models.CharField(verbose_name='Зарплата', max_length=100)
+    salary = MoneyField(
+        verbose_name='Зарплата', max_digits=14, decimal_places=2, default_currency='USD'
+    )
     description = models.TextField(verbose_name='Описание', max_length=10000)
     published_datetime = models.DateTimeField(
         verbose_name='Дата и время публикации', blank=True, null=True, default=None
@@ -190,7 +196,10 @@ class Resume(DateTimeMixin):
         verbose_name='Специалист',
         on_delete=models.CASCADE,
     )
-    salary = models.CharField(verbose_name='Зарплата', max_length=100)
+    # salary = models.CharField(verbose_name='Зарплата', max_length=100)
+    salary = MoneyField(
+        verbose_name='Зарплата', max_digits=14, decimal_places=2, default_currency='USD'
+    )
     published_datetime = models.DateTimeField(
         verbose_name='Дата и время публикации',
         blank=True,
