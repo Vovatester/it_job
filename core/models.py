@@ -1,13 +1,11 @@
 from datetime import date
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import (
-    models,
-)
-from django.core.validators import (
-    MinLengthValidator,
-    RegexValidator,
-)
+from django.db import models
+from django.core.validators import MinLengthValidator, RegexValidator
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
 from djmoney.models.fields import MoneyField
 
 
@@ -227,3 +225,9 @@ class SpecialistTechnology(models.Model):
         unique_together = ('specialist', 'technology')
         verbose_name = 'Технология специалиста'
         verbose_name_plural = 'Технологии специалиста'
+
+
+@receiver(models.signals.post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
