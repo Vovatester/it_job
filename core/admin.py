@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from .models import (
     Country,
-    City,
+    Town,
     Company,
     Technology,
     Specialist,
@@ -12,22 +12,22 @@ from .models import (
 )
 
 
-@admin.register(City)
-class CityAdmin(admin.ModelAdmin):
+@admin.register(Town)
+class TownAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
     list_filter = ('name',)
     search_fields = ('name',)
 
 
-class CityAdminInlines(admin.StackedInline):
-    model = City
+class TownAdminInlines(admin.StackedInline):
+    model = Town
     extra = 1
 
 
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
-    inlines = [CityAdminInlines]
+    inlines = [TownAdminInlines]
     list_display = ('name',)
 
     list_filter = ('name',)

@@ -1,35 +1,30 @@
+import os
 from datetime import date
 
-from django.conf import settings
+from dateutil import relativedelta
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.core.validators import MinLengthValidator, RegexValidator
-from django.dispatch import receiver
-from rest_framework.authtoken.models import Token
-from djmoney.models.fields import MoneyField
+from django.core.validators import (
+    MinLengthValidator,
+    RegexValidator,
+    MaxLengthValidator,
+)
+
+RUB = 'RUB'
+USD = 'USD'
+EUR = 'EUR'
+CURRENCY = [(RUB, 'RUB'), (USD, 'USD'), (EUR, 'EUR')]
+
+password_regex = '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]{8,}$'
 
 
-def check_age_18(born: date) -> bool:
+def check_age_18_validator(born: date) -> date | ValidationError:
     today = date.today()
-    age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-    if age < 18:
-        return False
+    age_18 = today - relativedelta.relativedelta(years=18)
+    if born <= age_18:
+        return born
     else:
-        return True
-
-
-def min_length_validator(char_count: int) -> MinLengthValidator:
-    return MinLengthValidator(
-        char_count,
-        f'Количество символов должно быть не менее {char_count}',
-    )
-
-
-def password_regex_validator() -> RegexValidator:
-    return RegexValidator(
-        regex='^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]{8,}$',
-        message='Пароль должен состоять из 8 символов, строчной и заглавной буквы, цифры и специального символа',
-    )
+        raise ValidationError('Возраст специалиста не может быть меньше 18 лет')
 
 
 class DateTimeMixin(models.Model):
@@ -41,7 +36,12 @@ class DateTimeMixin(models.Model):
 
 
 class Country(models.Model):
-    name = models.CharField(verbose_name='Страна', unique=True, max_length=50)
+    name = models.CharField(
+        verbose_name='Страна',
+        unique=True,
+        max_length=50,
+        validators=[MaxLengthValidator(50)],
+    )
 
     class Meta:
         verbose_name = 'Страна'
@@ -51,8 +51,12 @@ class Country(models.Model):
         return self.name
 
 
-class City(models.Model):
-    name = models.CharField(verbose_name='Город', max_length=100)
+class Town(models.Model):
+    name = models.CharField(
+        verbose_name='Город',
+        max_length=100,
+        validators=[MaxLengthValidator(100)],
+    )
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     class Meta:
@@ -69,22 +73,31 @@ class Company(DateTimeMixin):
         verbose_name='Логин',
         max_length=30,
         unique=True,
-        validators=[min_length_validator(8)],
+        validators=[
+            MinLengthValidator(8),
+            MaxLengthValidator(30),
+        ],
     )
     password = models.CharField(
-        verbose_name='Пароль', max_length=20, validators=[password_regex_validator()]
+        verbose_name='Пароль',
+        max_length=20,
+        validators=[RegexValidator(regex=password_regex), MaxLengthValidator(20)],
     )
     name = models.CharField(
         verbose_name='Наименование компании',
         max_length=100,
-        validators=[min_length_validator(4)],
+        validators=[MinLengthValidator(4), MaxLengthValidator(100)],
     )
     country = models.ForeignKey(
         Country, verbose_name='Страна', on_delete=models.CASCADE
     )
-    town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
+    town = models.ForeignKey(Town, verbose_name='Город', on_delete=models.CASCADE)
     foundation_date = models.DateField(verbose_name='Дата основания компании')
-    site_href = models.CharField(verbose_name='Сайт', max_length=200)
+    site_href = models.URLField(
+        verbose_name='Сайт',
+        max_length=200,
+        validators=[MaxLengthValidator(200)],
+    )
 
     class Meta:
         verbose_name = 'Компания'
@@ -101,7 +114,12 @@ class Company(DateTimeMixin):
 
 
 class Technology(models.Model):
-    name = models.CharField(verbose_name='Название', max_length=100, unique=True)
+    name = models.CharField(
+        verbose_name='Название',
+        max_length=100,
+        unique=True,
+        validators=[MaxLengthValidator(100)],
+    )
 
     class Meta:
         verbose_name = 'Технология'
@@ -116,35 +134,39 @@ class Specialist(DateTimeMixin):
         verbose_name='Логин',
         max_length=30,
         unique=True,
-        validators=[min_length_validator(8)],
+        validators=[MinLengthValidator(8), MaxLengthValidator(30)],
     )
     password = models.CharField(
-        verbose_name='Пароль', max_length=20, validators=[password_regex_validator()]
+        verbose_name='Пароль',
+        max_length=20,
+        validators=[RegexValidator(regex=password_regex), MaxLengthValidator(20)],
     )
     name = models.CharField(
-        verbose_name='Имя', max_length=100, validators=[min_length_validator(2)]
+        verbose_name='Имя',
+        max_length=100,
+        validators=[MinLengthValidator(2), MaxLengthValidator(100)],
     )
     surname = models.CharField(
-        verbose_name='Фамилия', max_length=100, validators=[min_length_validator(2)]
+        verbose_name='Фамилия',
+        max_length=100,
+        validators=[MinLengthValidator(2), MaxLengthValidator(100)],
     )
     patronymic = models.CharField(
         verbose_name='Отчество',
         max_length=100,
         blank=True,
-        validators=[min_length_validator(2)],
+        validators=[MinLengthValidator(2), MaxLengthValidator(100)],
     )
-    born_date = models.DateField(verbose_name='Дата рождения', default=None)
+    born_date = models.DateField(
+        verbose_name='Дата рождения', default=None, validators=[check_age_18_validator]
+    )
     country = models.ForeignKey(
         Country, verbose_name='Страна', on_delete=models.CASCADE
     )
-    town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
+    town = models.ForeignKey(Town, verbose_name='Город', on_delete=models.CASCADE)
     technologies = models.ManyToManyField(
         Technology, verbose_name='Технологии', through='SpecialistTechnology'
     )
-
-    def clean(self):
-        if check_age_18(born=self.born_date) is False:
-            raise ValidationError('Специалисты младше 18 лет не регистрируются')
 
     class Meta:
         verbose_name = 'Специалист'
@@ -162,19 +184,33 @@ class Specialist(DateTimeMixin):
 
 class Vacancy(DateTimeMixin):
     name = models.CharField(
-        verbose_name='Должность', max_length=100, validators=[min_length_validator(2)]
+        verbose_name='Должность',
+        max_length=100,
+        validators=[MinLengthValidator(2), MaxLengthValidator(100)],
     )
     company = models.ForeignKey(
         Company,
         verbose_name='Компания',
         on_delete=models.CASCADE,
     )
-    town = models.ForeignKey(City, verbose_name='Город', on_delete=models.CASCADE)
-    # salary = models.CharField(verbose_name='Зарплата', max_length=100)
-    salary = MoneyField(
-        verbose_name='Зарплата', max_digits=14, decimal_places=2, default_currency='USD'
+    town = models.ForeignKey(Town, verbose_name='Город', on_delete=models.CASCADE)
+    salary = models.CharField(
+        verbose_name='Зарплата',
+        max_length=100,
+        validators=[MaxLengthValidator(100)],
     )
-    description = models.TextField(verbose_name='Описание', max_length=10000)
+    salary_currency = models.CharField(
+        verbose_name='Валюта',
+        choices=CURRENCY,
+        default=RUB,
+        max_length=3,
+        validators=[MaxLengthValidator(3)],
+    )
+    description = models.TextField(
+        verbose_name='Описание',
+        max_length=10000,
+        validators=[MaxLengthValidator(10000)],
+    )
     published_datetime = models.DateTimeField(
         verbose_name='Дата и время публикации', blank=True, null=True, default=None
     )
@@ -188,15 +224,32 @@ class Vacancy(DateTimeMixin):
 
 
 class Resume(DateTimeMixin):
-    position = models.CharField(verbose_name='Должность', max_length=150)
+    position = models.CharField(
+        verbose_name='Должность',
+        max_length=150,
+        validators=[MaxLengthValidator(150)],
+    )
     specialist = models.ForeignKey(
         Specialist,
         verbose_name='Специалист',
         on_delete=models.CASCADE,
     )
-    # salary = models.CharField(verbose_name='Зарплата', max_length=100)
-    salary = MoneyField(
-        verbose_name='Зарплата', max_digits=14, decimal_places=2, default_currency='USD'
+    salary = models.CharField(
+        verbose_name='Зарплата',
+        max_length=100,
+        validators=[MaxLengthValidator(100)],
+    )
+    salary_currency = models.CharField(
+        verbose_name='Валюта',
+        choices=CURRENCY,
+        default=RUB,
+        max_length=3,
+        validators=[MaxLengthValidator(3)],
+    )
+    description = models.TextField(
+        verbose_name='Описание',
+        max_length=10000,
+        validators=[MaxLengthValidator(10000)],
     )
     published_datetime = models.DateTimeField(
         verbose_name='Дата и время публикации',
@@ -227,7 +280,12 @@ class SpecialistTechnology(models.Model):
         verbose_name_plural = 'Технологии специалиста'
 
 
-@receiver(models.signals.post_save, sender=settings.AUTH_USER_MODEL)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
-        Token.objects.create(user=instance)
+class Token(models.Model):
+    token_size = 30
+    specialist = models.ForeignKey(
+        Specialist, verbose_name='Cпециалист', on_delete=models.CASCADE
+    )
+    company = models.ForeignKey(
+        Company, verbose_name='Компания', on_delete=models.CASCADE
+    )
+    token = os.urandom(token_size)
