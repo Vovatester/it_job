@@ -19,7 +19,7 @@ from core.models import (
 
 
 class Command(BaseCommand):
-    technologies_name = ['Python', 'C', "C++", 'Java', 'JavaScript']
+    technologies_names = ['Python', 'C', "C++", 'Java', 'JavaScript']
     batch_size = 500
     towns_in_every_country = 10
     companies_count = 10
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         self.insert_specialists()
         self.insert_resumes()
         self.insert_technologies()
-        self.insert_specialist_technology()
+        # self.insert_specialist_technology()
         self.insert_vacancies()
 
     def insert_countries(self):
@@ -99,7 +99,7 @@ class Command(BaseCommand):
         objs = (
             SpecialistTechnology(
                 specialist_id=specialist_id,
-                technology_id=randint(1, len(self.technologies_name)),
+                technology_id=randint(1, len(self.technologies_names)),
             )
             for specialist_id in range(1, self.specialists_count + 1)
         )
@@ -119,7 +119,7 @@ class Command(BaseCommand):
         Resume.objects.bulk_create(objs=objs, batch_size=self.batch_size)
 
     def insert_technologies(self):
-        objs = (Technology(name=technology) for technology in self.technologies_name)
+        objs = (Technology(name=technology) for technology in self.technologies_names)
         Technology.objects.bulk_create(objs=objs, batch_size=self.batch_size)
 
     def insert_vacancies(self):

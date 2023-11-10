@@ -1,7 +1,6 @@
-import os
 from datetime import date
 
-from dateutil import relativedelta
+from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.core.validators import (
@@ -17,14 +16,15 @@ CURRENCY = [(RUB, 'RUB'), (USD, 'USD'), (EUR, 'EUR')]
 
 password_regex = '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]{8,}$'
 
+min_age = 18
 
-def check_age_18_validator(born: date) -> date | ValidationError:
+
+def min_born_date_validator(born_date: date) -> date | ValidationError:
     today = date.today()
-    age_18 = today - relativedelta.relativedelta(years=18)
-    if born <= age_18:
-        return born
-    else:
+    age_18 = today - relativedelta(years=min_age)
+    if born_date > age_18:
         raise ValidationError('Возраст специалиста не может быть меньше 18 лет')
+    return born_date
 
 
 class DateTimeMixin(models.Model):
@@ -158,7 +158,7 @@ class Specialist(DateTimeMixin):
         validators=[MinLengthValidator(2), MaxLengthValidator(100)],
     )
     born_date = models.DateField(
-        verbose_name='Дата рождения', default=None, validators=[check_age_18_validator]
+        verbose_name='Дата рождения', default=None, validators=[min_born_date_validator]
     )
     country = models.ForeignKey(
         Country, verbose_name='Страна', on_delete=models.CASCADE
@@ -173,7 +173,9 @@ class Specialist(DateTimeMixin):
         verbose_name_plural = 'Специалисты'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(born_date__lte=date.today()),
+                check=models.Q(
+                    born_date__lte=date.today() - relativedelta(years=min_age),
+                ),
                 name='born_date_constraint',
             ),
         ]
@@ -281,11 +283,12 @@ class SpecialistTechnology(models.Model):
 
 
 class Token(models.Model):
-    token_size = 30
     specialist = models.ForeignKey(
         Specialist, verbose_name='Cпециалист', on_delete=models.CASCADE
     )
     company = models.ForeignKey(
         Company, verbose_name='Компания', on_delete=models.CASCADE
     )
-    token = os.urandom(token_size)
+    token = models.CharField(
+        verbose_name='token', max_length=200, validators=[MaxLengthValidator(200)]
+    )

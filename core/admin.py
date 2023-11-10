@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import (
+from core.models import (
     Country,
     Town,
     Company,
@@ -15,21 +15,18 @@ from .models import (
 @admin.register(Town)
 class TownAdmin(admin.ModelAdmin):
     list_display = ('name',)
-
     list_filter = ('name',)
     search_fields = ('name',)
 
 
-class TownAdminInlines(admin.StackedInline):
-    model = Town
-    extra = 1
-
-
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
+    class TownAdminInlines(admin.StackedInline):
+        model = Town
+        extra = 1
+
     inlines = [TownAdminInlines]
     list_display = ('name',)
-
     list_filter = ('name',)
     search_fields = ('name',)
 
@@ -37,7 +34,6 @@ class CountryAdmin(admin.ModelAdmin):
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     list_display = ('name', 'country', 'town', 'foundation_date', 'site_href')
-
     list_filter = ('name', 'country', 'town')
     search_fields = ('name', 'country', 'town')
 
@@ -45,7 +41,6 @@ class CompanyAdmin(admin.ModelAdmin):
 @admin.register(Technology)
 class TechnologyAdmin(admin.ModelAdmin):
     list_display = ('name',)
-
     list_filter = ('name',)
     search_fields = ('name',)
 
@@ -58,7 +53,6 @@ class SpecialistAdmin(admin.ModelAdmin):
 
     inlines = (SpecialistTechnologyInline,)
     list_display = ('name', 'surname', 'patronymic', 'country', 'town')
-
     list_filter = ('name', 'surname', 'country', 'town')
     search_fields = ('name', 'surname', 'country', 'town')
 
@@ -67,7 +61,6 @@ class SpecialistAdmin(admin.ModelAdmin):
 class VacancyAdmin(admin.ModelAdmin):
     exclude = ('published_datetime',)
     list_display = ('name', 'company', 'town', 'salary', 'description')
-
     list_filter = ('name', 'company', 'town', 'salary')
     search_fields = ('name', 'company', 'town', 'salary')
 
@@ -76,6 +69,5 @@ class VacancyAdmin(admin.ModelAdmin):
 class ResumeAdmin(admin.ModelAdmin):
     exclude = ('published_datetime',)
     list_display = ('position', 'specialist', 'salary')
-
     list_filter = ('position', 'specialist', 'salary')
     search_fields = ('position', 'specialist', 'salary')
