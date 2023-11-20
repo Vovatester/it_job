@@ -18,6 +18,13 @@ from core.models import (
 )
 
 
+def salary_choice():
+    salary_digit = str(randint(1000, 100000))
+    salary_range = f'{salary_digit}-{int(salary_digit) + randint(1000, 30000)}'
+    salary_choices = choice([salary_digit, salary_range])
+    return salary_choices
+
+
 class Command(BaseCommand):
     technologies_names = ['Python', 'C', "C++", 'Java', 'JavaScript']
     batch_size = 500
@@ -33,10 +40,9 @@ class Command(BaseCommand):
         self.insert_countries()
         self.insert_cities()
         self.insert_companies()
+        self.insert_technologies()
         self.insert_specialists()
         self.insert_resumes()
-        self.insert_technologies()
-        # self.insert_specialist_technology()
         self.insert_vacancies()
 
     def insert_countries(self):
@@ -95,7 +101,6 @@ class Command(BaseCommand):
         )
         Specialist.objects.bulk_create(objs=objs, batch_size=self.batch_size)
 
-    def insert_specialist_technology(self):
         objs = (
             SpecialistTechnology(
                 specialist_id=specialist_id,
@@ -109,8 +114,8 @@ class Command(BaseCommand):
         objs = (
             Resume(
                 position=self.faker.job(),
-                salary_currency=choice(CURRENCY),
-                salary=randint(1000, 100000),
+                salary_currency=choice(CURRENCY)[1],
+                salary=salary_choice(),
                 description=self.faker.text(max_nb_chars=1500),
                 specialist_id=specialist_id,
             )
@@ -127,8 +132,8 @@ class Command(BaseCommand):
         objs = (
             Vacancy(
                 name=self.faker.job(),
-                salary_currency=choice(CURRENCY),
-                salary=randint(1000, 20000),
+                salary_currency=choice(CURRENCY)[1],
+                salary=salary_choice(),
                 description=self.faker.text(max_nb_chars=1500),
                 company_id=identifier,
                 town_id=choice(
