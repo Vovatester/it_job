@@ -12,7 +12,11 @@ from django.core.validators import (
 RUB = 'RUB'
 USD = 'USD'
 EUR = 'EUR'
-CURRENCY = [(RUB, 'RUB'), (USD, 'USD'), (EUR, 'EUR')]
+CURRENCY = [
+    (RUB, 'RUB'),
+    (USD, 'USD'),
+    (EUR, 'EUR'),
+]
 
 password_regex = '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]{8,}$'
 
@@ -25,6 +29,37 @@ def min_born_date_validator(born_date: date) -> date | ValidationError:
     if born_date > age_18:
         raise ValidationError('Возраст специалиста не может быть меньше 18 лет')
     return born_date
+
+
+def salary_validator(
+    salary: str,
+) -> str | ValidationError:
+    if len(salary) > 50:
+        raise ValidationError('Поле зарплата не может содержать больше 50 символов')
+
+    if salary.count('-') == 0:
+        if not salary.isdigit():
+            raise ValidationError('Поле должно содержать только цифры')
+        if salary.startswith('0'):
+            raise ValidationError('Зарплата не может начинаться с цифры "0"')
+        return salary
+
+    if salary.count('-') == 1:
+        splited_salary = salary.split('-')
+        print(splited_salary)
+        if splited_salary[0].startswith('0') or splited_salary[1].startswith('0'):
+            raise ValidationError('Число не может начинаться с 0')
+        if splited_salary[0] == ('') or splited_salary[1] == (''):
+            raise ValidationError(
+                'Число не может начинаться или заканчиваться знаком "-"'
+            )
+        if not splited_salary[0].isdigit() or not splited_salary[1].isdigit():
+            raise ValidationError('Поле должно содержать только цифры')
+        if splited_salary[0] >= splited_salary[1]:
+            raise ValidationError('Неверно указан диапазон')
+        return salary
+
+    raise ValidationError('Введите корректные данные')
 
 
 class DateTimeMixin(models.Model):
@@ -198,8 +233,11 @@ class Vacancy(DateTimeMixin):
     town = models.ForeignKey(Town, verbose_name='Город', on_delete=models.CASCADE)
     salary = models.CharField(
         verbose_name='Зарплата',
-        max_length=100,
-        validators=[MaxLengthValidator(100)],
+        max_length=50,
+        validators=[
+            MaxLengthValidator(50),
+            salary_validator,
+        ],
     )
     salary_currency = models.CharField(
         verbose_name='Валюта',
@@ -238,8 +276,11 @@ class Resume(DateTimeMixin):
     )
     salary = models.CharField(
         verbose_name='Зарплата',
-        max_length=100,
-        validators=[MaxLengthValidator(100)],
+        max_length=50,
+        validators=[
+            MaxLengthValidator(50),
+            salary_validator,
+        ],
     )
     salary_currency = models.CharField(
         verbose_name='Валюта',
