@@ -1,12 +1,8 @@
-from datetime import date
-from random import choice, randint
+from random import choice
 
-from dateutil.relativedelta import relativedelta
 from django.core.management import BaseCommand
-from faker import Faker
 
 from core.models import (
-    CURRENCY,
     Country,
     Town,
     Company,
@@ -14,132 +10,106 @@ from core.models import (
     Resume,
     Technology,
     Vacancy,
-    SpecialistTechnology,
 )
+from core.tests.factories import (
+    CountryFactory,
+    TownFactory,
+    CompanyFactory,
+    TechnologyFactory,
+    SpecialistFactory,
+    SpecialistTechnologyFactory,
+    VacancyFactory,
+    ResumeFactory,
+)
+from core.data import TECHNOLOGIES
 
-
-def salary_choice():
-    salary_digit = str(randint(1000, 100000))
-    salary_range = f'{salary_digit}-{int(salary_digit) + randint(1000, 30000)}'
-    salary_choices = choice([salary_digit, salary_range])
-    return salary_choices
+countries_count = 15
+towns_count_in_every_country = 10
+companies_count = 200
+specialists_count = 20
+specialist_technologies_count = 3
+company_vacancies_count = 2
+specialists_resumes_count = 2
 
 
 class Command(BaseCommand):
-    technologies_names = ['Python', 'C', "C++", 'Java', 'JavaScript']
-    batch_size = 500
-    towns_in_every_country = 10
-    companies_count = 10
-    countries_count = 10
-    specialists_count = 10
+    def handle(self, *args, **options):
+        countries = self.insert_countries()
+        towns = self.insert_towns(countries=countries)
+        companies = self.insert_companies(towns=towns)
+        technologies = self.insert_technologies()
+        specialists = self.insert_specialists(towns=towns, technologies=technologies)
+        self.insert_vacancies(companies=companies)
+        self.insert_resumes(specialists=specialists)
 
-    help = 'Генерация тестовых записей'
-    faker = Faker('ru_RU')
+    @staticmethod
+    def insert_countries() -> list[Country]:
+        return CountryFactory.create_batch(size=countries_count)
 
-    def handle(self, *args, **kwargs):
-        self.insert_countries()
-        self.insert_cities()
-        self.insert_companies()
-        self.insert_technologies()
-        self.insert_specialists()
-        self.insert_resumes()
-        self.insert_vacancies()
+    @staticmethod
+    def insert_towns(countries: list[Country]) -> list[Town]:
+        towns = []
+        for country in countries:
+            for _ in range(towns_count_in_every_country):
+                towns.append(TownFactory(country=country))
 
-    def insert_countries(self):
-        objs = (
-            Country(name=self.faker.unique.country())
-            for _ in range(self.countries_count)
-        )
-        Country.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+        return towns
 
-    def insert_cities(self):
-        for country in Country.objects.all():
-            objs = (
-                Town(name=self.faker.unique.city(), country_id=country.pk)
-                for _ in range(self.towns_in_every_country)
-            )
-            Town.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+    @staticmethod
+    def insert_companies(towns: list[Town]) -> list[Company]:
+        companies = []
+        for _ in range(companies_count):
+            town = choice(towns)
+            companies.append(CompanyFactory(town=town, country=town.country))
 
-    def insert_companies(self):
-        towns = Town.objects.values('country_id', 'id')
-        objs = (
-            Company(
-                login=self.faker.unique.user_name(),
-                password=self.faker.password(length=8),
-                name=self.faker.name(),
-                foundation_date=self.faker.date(),
-                site_href=self.faker.url(),
-                country_id=country_id,
-                town_id=choice(
-                    [town['id'] for town in towns if town['country_id'] == country_id]
-                ),
-            )
-            for country_id in range(1, self.companies_count + 1)
-        )
-        Company.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+        return companies
 
-    def insert_specialists(self):
-        start_born_date = date(1970, 1, 1)
-        end_born_date = date.today() - relativedelta(years=18)
-        towns = Town.objects.values('id', 'country_id')
-        objs = (
-            Specialist(
-                login=self.faker.unique.user_name(),
-                password=self.faker.password(length=8),
-                name=self.faker.first_name(),
-                surname=self.faker.last_name(),
-                patronymic=self.faker.middle_name(),
-                born_date=self.faker.date_between(
-                    start_date=start_born_date, end_date=end_born_date
-                ),
-                country_id=country_id,
-                town_id=choice(
-                    [town['id'] for town in towns if town['country_id'] == country_id]
-                ),
-            )
-            for country_id in range(1, self.specialists_count + 1)
-        )
-        Specialist.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+    @staticmethod
+    def insert_technologies() -> list[Technology]:
+        technologies = []
+        for technology in TECHNOLOGIES:
+            technologies.append(TechnologyFactory(name=technology))
 
-        objs = (
-            SpecialistTechnology(
-                specialist_id=specialist_id,
-                technology_id=randint(1, len(self.technologies_names)),
-            )
-            for specialist_id in range(1, self.specialists_count + 1)
-        )
-        SpecialistTechnology.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+        return technologies
 
-    def insert_resumes(self):
-        objs = (
-            Resume(
-                position=self.faker.job(),
-                salary_currency=choice(CURRENCY)[1],
-                salary=salary_choice(),
-                description=self.faker.text(max_nb_chars=1500),
-                specialist_id=specialist_id,
-            )
-            for specialist_id in range(1, self.specialists_count + 1)
-        )
-        Resume.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+    @staticmethod
+    def insert_specialists(
+        towns: list[Town], technologies: list[Technology]
+    ) -> list[Specialist]:
+        specialists = []
+        specialist_technology = []
+        specialist_tech = []
+        for _ in range(specialists_count):
+            town = choice(towns)
+            specialists.append(SpecialistFactory(town=town, country=town.country))
 
-    def insert_technologies(self):
-        objs = (Technology(name=technology) for technology in self.technologies_names)
-        Technology.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+            for _ in range(specialist_technologies_count):
+                technology = choice(technologies)
+                while technology in specialist_tech:
+                    technology = choice(technologies)
+                specialist_tech.append(technology)
+                specialist_technology.append(
+                    SpecialistTechnologyFactory(
+                        specialist=specialists[-1], technology=technology
+                    )
+                )
+            specialist_tech = []
+        return specialists
 
-    def insert_vacancies(self):
-        towns = Town.objects.values('id', 'country_id')
-        objs = (
-            Vacancy(
-                name=self.faker.job(),
-                salary_currency=choice(CURRENCY)[1],
-                salary=salary_choice(),
-                description=self.faker.text(max_nb_chars=1500),
-                company_id=identifier,
-                town_id=choice(
-                    [town['id'] for town in towns if town['country_id'] == identifier]
-                ),
-            )
-            for identifier in range(1, self.companies_count + 1)
-        )
-        Vacancy.objects.bulk_create(objs=objs, batch_size=self.batch_size)
+    @staticmethod
+    def insert_vacancies(companies: list[Company]) -> list[Vacancy]:
+        vacancies = []
+        for company in companies:
+            for _ in range(company_vacancies_count):
+                vacancies.append(VacancyFactory(company=company, town=company.town))
+
+        return vacancies
+
+    @staticmethod
+    def insert_resumes(specialists: list[Specialist]) -> list[Resume]:
+        resumes = []
+        for specialist in specialists:
+            for _ in range(specialists_resumes_count):
+                resumes.append(ResumeFactory(specialist=specialist))
+
+        return resumes
